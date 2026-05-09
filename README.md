@@ -49,7 +49,7 @@ AgriSmart solves 5 real problems Indian farmers face every day:
   </tr>
   <tr>
     <td align="center"><b>🤖 AI Chat</b></td>
-    <td align="center"><b>🛰️ Satellite View</b></td>
+    <td align="center"><b>🛰️ Satellite Filed Analyzer</b></td>
   </tr>
   <tr>
     <td><img src="AGSS/ChatBot.png" width="100%"/></td>
