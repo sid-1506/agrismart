@@ -44,8 +44,8 @@ AgriSmart solves 5 real problems Indian farmers face every day:
     <td align="center"><b>📊 Dashboard</b></td>
   </tr>
   <tr>
-    <td><img src="AGSS/Landing_Page.png" width="100%"/></td>
-    <td><img src="AGSS/Introduction_Page.png" width="100%"/></td>
+    <td><img src="AGSS/Landing Page.png" width="100%"/></td>
+    <td><img src="AGSS/Introduction Page.png" width="100%"/></td>
   </tr>
   <tr>
     <td align="center"><b>🤖 AI Chat</b></td>
@@ -53,23 +53,23 @@ AgriSmart solves 5 real problems Indian farmers face every day:
   </tr>
   <tr>
     <td><img src="AGSS/ChatBot.png" width="100%"/></td>
-    <td><img src="AGSS/Satellite_View.png" width="100%"/></td>
+    <td><img src="AGSS/Satellite View.png" width="100%"/></td>
   </tr>
   <tr>
     <td align="center"><b>🌾 Farm Intelligence</b></td>
     <td align="center"><b>🦠 Disease Detection</b></td>
   </tr>
   <tr>
-    <td><img src="AGSS/Farm_Intelligence.png" width="100%"/></td>
-    <td><img src="AGSS/Crop_disease_detection.png" width="100%"/></td>
+    <td><img src="AGSS/Farm Intelligence.png" width="100%"/></td>
+    <td><img src="AGSS/Crop disease detection.png" width="100%"/></td>
   </tr>
   <tr>
     <td align="center"><b>📅 My Crop Plans</b></td>
     <td align="center"><b>🌐 8 Languages</b></td>
   </tr>
   <tr>
-    <td><img src="AGSS/My_Crops_section.png" width="100%"/></td>
-    <td><img src="AGSS/Many_Languages.png" width="100%"/></td>
+    <td><img src="AGSS/My Crops_section.png" width="100%"/></td>
+    <td><img src="AGSS/Many Languages.png" width="100%"/></td>
   </tr>
 </table>
 
