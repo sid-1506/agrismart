@@ -68,7 +68,7 @@ AgriSmart solves 5 real problems Indian farmers face every day:
     <td align="center"><b>🌐 8 Languages</b></td>
   </tr>
   <tr>
-    <td><img src="AGSS/My Crops_section.png" width="100%"/></td>
+    <td><img src="AGSS/My Crops section.png" width="100%"/></td>
     <td><img src="AGSS/Many Languages.png" width="100%"/></td>
   </tr>
 </table>
