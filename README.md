@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="AGSS/Landing_Page.png" alt="AgriSmart Banner" width="100%"/>
+<img src="AGSS/Landing Page.png" alt="AgriSmart Banner" width="100%"/>
 
 # 🌾 AgriSmart
 
