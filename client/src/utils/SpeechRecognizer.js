@@ -10,12 +10,11 @@
  */
 
 class SpeechRecognizer {
-  constructor(language = 'en-US') {
-    // Language codes: en-US, hi-IN, mr-IN, gu-IN
+  constructor(language = '') {
+    // Empty string = browser auto-detects spoken language
     this.language = language;
     this.isListening = false;
     this.transcript = '';
-    this.isFinal = false;
 
     // Browser compatibility
     const SpeechRecognition =
@@ -30,15 +29,15 @@ class SpeechRecognizer {
     }
 
     this.recognition = new SpeechRecognition();
-    this.recognition.continuous = true;
-    this.recognition.interimResults = true;
+    this.recognition.continuous = false;
+    this.recognition.interimResults = false;
     this.recognition.maxAlternatives = 1;
-    this.recognition.language = language;
+    this.recognition.lang = language;
 
     // Callbacks
     this.onStart = null;
-    this.onResult = null; // (transcript, isFinal)
-    this.onError = null; // (errorMessage)
+    this.onResult = null; // (transcript)
+    this.onError = null;  // (errorMessage)
     this.onEnd = null;
 
     this._setupListeners();
@@ -54,20 +53,11 @@ class SpeechRecognizer {
     };
 
     this.recognition.onresult = (event) => {
-      let interim = '';
+      let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          this.transcript += transcript + ' ';
-          this.isFinal = true;
-        } else {
-          interim += transcript;
-        }
+        finalTranscript += event.results[i][0].transcript;
       }
-
-      // Combine final and interim
-      const fullTranscript = this.transcript + interim;
-      if (this.onResult) this.onResult(fullTranscript.trim(), this.isFinal);
+      if (this.onResult) this.onResult(finalTranscript.trim());
     };
 
     this.recognition.onerror = (event) => {
@@ -76,9 +66,8 @@ class SpeechRecognizer {
         'audio-capture': 'Microphone not available. Check device settings.',
         'not-allowed': 'Microphone permission denied. Allow access in browser settings.',
         'network': 'Network error. Check your internet connection.',
-        'default': `Speech error: ${event.error}`,
       };
-      const message = errorMessages[event.error] || errorMessages['default'];
+      const message = errorMessages[event.error] || `Speech error: ${event.error}`;
       if (this.onError) this.onError(message);
     };
 
@@ -97,11 +86,30 @@ class SpeechRecognizer {
     }
     if (this.isListening) return;
     this.transcript = '';
-    this.isFinal = false;
-    try {
-      this.recognition.start();
-    } catch (e) {
-      if (this.onError) this.onError('Could not start microphone. Please try again.');
+
+    // Check mic permission before starting recognition
+    if (navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          try {
+            this.recognition.start();
+          } catch (e) {
+            if (this.onError) this.onError('Could not start microphone. Please try again.');
+          }
+        })
+        .catch((err) => {
+          const msg = err.name === 'NotAllowedError'
+            ? 'Microphone permission denied. Allow access in browser settings.'
+            : 'Microphone not available. Check device settings.';
+          if (this.onError) this.onError(msg);
+        });
+    } else {
+      // Fallback for browsers without getUserMedia
+      try {
+        this.recognition.start();
+      } catch (e) {
+        if (this.onError) this.onError('Could not start microphone. Please try again.');
+      }
     }
   }
 
@@ -120,7 +128,7 @@ class SpeechRecognizer {
   setLanguage(language) {
     this.language = language;
     if (this.recognition) {
-      this.recognition.language = language;
+      this.recognition.lang = language;
     }
   }
 

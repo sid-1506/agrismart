@@ -362,14 +362,14 @@ const styles = `
 function renderMarkdown(text) {
   return text
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/^### (.+)$/gm,  "<h3>$1</h3>")
-    .replace(/^## (.+)$/gm,   "<h2>$1</h2>")
-    .replace(/^# (.+)$/gm,    "<h1>$1</h1>")
-    .replace(/^[\-\*] (.+)$/gm,"<li>$1</li>")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/^[\-\*] (.+)$/gm, "<li>$1</li>")
     .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
     .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
     .replace(/\n\n/g, "<br/><br/>")
-    .replace(/\n/g,   "<br/>");
+    .replace(/\n/g, "<br/>");
 }
 
 function fmtTime(dateStr) {
@@ -381,14 +381,14 @@ function fmtRelative(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   const diffMin = Math.floor((Date.now() - d) / 60000);
-  if (diffMin < 1)  return "just now";
+  if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;
   const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24)   return `${diffH}h ago`;
+  if (diffH < 24) return `${diffH}h ago`;
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-const LANGUAGES = ["English","Hindi","Marathi","Gujarati","Tamil","Telugu","Kannada","Bengali"];
+const LANGUAGES = ["English", "Hindi", "Marathi", "Gujarati", "Tamil", "Telugu", "Kannada", "Bengali"];
 
 const getInitials = (name = "") =>
   name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
@@ -437,13 +437,13 @@ export default function Chat() {
     fetchChats, loadChat, newChat, sendMessage, deleteChat,
   } = useChatStore();
 
-  const [input, setInput]       = useState("");
+  const [input, setInput] = useState("");
   const [chatLang, setChatLang] = useState(settingsLang || user?.language || "English");
   const [isListening, setListening] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
 
-  const bodyRef    = useRef(null);
-  const inputRef   = useRef(null);
+  const bodyRef = useRef(null);
+  const inputRef = useRef(null);
   const recognizer = useRef(null);
 
   const userInitials = getInitials(user?.name || "U");
@@ -471,7 +471,7 @@ export default function Chat() {
     const isPlanRequest = /\b(plan|plan for|farming plan|generate plan)\b/i.test(msg);
     if (isPlanRequest) {
       const cropMatch = msg.match(/plan for\s+([a-zA-Z\s]+)/i);
-      const cropName  = cropMatch?.[1]?.trim();
+      const cropName = cropMatch?.[1]?.trim();
       if (cropName) { await handleGeneratePlan(cropName); return; }
     }
 
@@ -489,7 +489,7 @@ export default function Chat() {
       const { data } = await axios.post(`${API}/api/chat/generate-plan`, {
         cropName,
         location: chatLocation,
-        season:   "current",
+        season: "current",
       });
       if (data.success) {
         await sendMessage(`Generate a farming plan for ${cropName}`, {
@@ -514,11 +514,18 @@ export default function Chat() {
       setListening(false);
       return;
     }
-    const lang = getLanguageCode(chatLang);
-    recognizer.current = new SpeechRecognizer(lang, (transcript) => {
+    const lang = "";
+    recognizer.current = new SpeechRecognizer(lang);
+    recognizer.current.onResult = (transcript) => {
       setInput(prev => prev + transcript);
+    };
+    recognizer.current.onError = (msg) => {
+      alert(msg);
       setListening(false);
-    });
+    };
+    recognizer.current.onEnd = () => {
+      setListening(false);
+    };
     recognizer.current.start();
     setListening(true);
   };
@@ -540,19 +547,19 @@ export default function Chat() {
           <div className="hist-header">
             <div className="hist-title">{t("chat.history")}</div>
             <button className="new-chat-btn" onClick={newChat}>
-              <span className="nc-icon"><i className="fa-solid fa-plus"/></span>
+              <span className="nc-icon"><i className="fa-solid fa-plus" /></span>
               {t("chat.newChat")}
             </button>
           </div>
 
           <div className="hist-list">
             {isLoading && !chats.length ? (
-              [1,2,3].map(i => (
+              [1, 2, 3].map(i => (
                 <div key={i} style={{
                   padding: "12px 14px", borderRadius: 16, marginBottom: 4,
                   background: "var(--bg-secondary)", height: 66,
                   animation: "pulse 1.4s ease infinite",
-                }}/>
+                }} />
               ))
             ) : chats.length === 0 ? (
               <div className="hist-empty">
@@ -581,7 +588,7 @@ export default function Chat() {
                     title="Delete"
                     onClick={(e) => handleDelete(e, c._id)}
                   >
-                    <i className="fa-solid fa-trash"/>
+                    <i className="fa-solid fa-trash" />
                   </button>
                 </div>
               ))
@@ -595,11 +602,11 @@ export default function Chat() {
           {/* Header */}
           <div className="chat-header">
             <div className="chat-header-left">
-              <div className="ai-avatar"><i className="fa-solid fa-wheat-awn"/></div>
+              <div className="ai-avatar"><i className="fa-solid fa-wheat-awn" /></div>
               <div>
                 <div className="ai-name">{t("chat.title")}</div>
                 <div className="ai-status">
-                  <div className="status-dot"/>
+                  <div className="status-dot" />
                   {t("chat.online")}
                 </div>
               </div>
@@ -613,7 +620,7 @@ export default function Chat() {
                 {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
               <div className="model-badge">
-                <i className="fa-solid fa-microchip"/> {t("chat.modelBadge")}
+                <i className="fa-solid fa-microchip" /> {t("chat.modelBadge")}
               </div>
             </div>
           </div>
@@ -651,12 +658,12 @@ export default function Chat() {
                 {(isSending || planLoading) && (
                   <div className="msg-row">
                     <div className="msg-avatar ai-av">
-                      <i className="fa-solid fa-wheat-awn"/>
+                      <i className="fa-solid fa-wheat-awn" />
                     </div>
                     <div className="typing-bubble">
-                      <div className="typing-dot"/>
-                      <div className="typing-dot"/>
-                      <div className="typing-dot"/>
+                      <div className="typing-dot" />
+                      <div className="typing-dot" />
+                      <div className="typing-dot" />
                     </div>
                   </div>
                 )}
@@ -673,7 +680,7 @@ export default function Chat() {
                 onClick={toggleVoice}
                 title={isListening ? t("common.stopRecording") : t("common.voiceInput")}
               >
-                <i className={`fa-solid ${isListening ? "fa-stop" : "fa-microphone"}`}/>
+                <i className={`fa-solid ${isListening ? "fa-stop" : "fa-microphone"}`} />
               </button>
 
               {/* Text area center */}
@@ -700,7 +707,7 @@ export default function Chat() {
                   onChange={e => setChatLang(e.target.value)}
                   title="Response language"
                 >
-                  {LANGUAGES.map(l => <option key={l} value={l}>{l.slice(0,3)}</option>)}
+                  {LANGUAGES.map(l => <option key={l} value={l}>{l.slice(0, 3)}</option>)}
                 </select>
                 <button
                   className="send-btn"
@@ -708,7 +715,7 @@ export default function Chat() {
                   disabled={!input.trim() || isSending}
                   title={t("chat.send")}
                 >
-                  <i className="fa-solid fa-paper-plane"/>
+                  <i className="fa-solid fa-paper-plane" />
                 </button>
               </div>
             </div>
