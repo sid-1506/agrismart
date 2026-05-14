@@ -1,8 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AppLayout, layoutStyles } from "../components/Layout";
 import client from "../api/client";
 import { useActiveLocation } from "../stores/useLocationStore";
+
+const LOADING_MESSAGES = [
+  "Fetching latest mandi insights…",
+  "Connecting to market servers…",
+  "Market servers are busy, retrying…",
+  "Analyzing latest market data…",
+  "Gathering price intelligence…",
+  "Almost there, processing data…",
+];
 
 const STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat",
@@ -93,6 +102,27 @@ const styles = `
   .loading-box{display:flex;align-items:center;justify-content:center;gap:12px;padding:30px;color:var(--text-muted);font-size:14px;}
   .spinner{width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.7s linear infinite;}
   .error-box{background:#FFF3F3;border:1px solid #FFCDD2;border-radius:12px;padding:14px;color:#C62828;font-size:14px;display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+
+  /* Skeleton loader */
+  @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+  .skel-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--card-shadow);margin-bottom:28px;}
+  .skel-row{display:flex;gap:16px;padding:14px 16px;border-bottom:0.5px solid var(--border-light);}
+  .skel-row:last-child{border-bottom:none;}
+  .skel-cell{height:14px;border-radius:6px;background:linear-gradient(90deg,var(--bg-secondary) 25%,var(--border-light,#e8e8e8) 50%,var(--bg-secondary) 75%);background-size:800px 100%;animation:shimmer 1.5s ease-in-out infinite;}
+  .skel-header{padding:13px 16px;background:var(--bg-secondary);display:flex;gap:16px;}
+  .skel-header .skel-cell{height:12px;opacity:0.5;}
+
+  /* Rotating loading message */
+  .loading-enhanced{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 20px;}
+  .loading-msg{font-size:14px;color:var(--text-muted);animation:fadeUp 0.4s ease both;text-align:center;}
+  .loading-sub{font-size:12px;color:var(--text-light);margin-top:2px;}
+
+  /* Friendly info banner (non-alarming) */
+  .info-banner{background:#FFF8E1;border:1px solid #FFE082;border-radius:12px;padding:14px 18px;color:#7F4A00;font-size:14px;display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .info-banner i{flex-shrink:0;}
+
+  /* Stale data badge */
+  .stale-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 10px;border-radius:6px;font-weight:600;}
 `;
 
 const fmt = n => `₹${Number(n).toLocaleString("en-IN")}`;
@@ -127,6 +157,8 @@ export default function Mandi() {
   const [loadingPrices, setLoadPrices] = useState(false);
   const [priceError, setPriceError] = useState("");
   const [emptyInfo, setEmptyInfo]   = useState(null); // { reason, commodity, state, suggestions }
+  const [dataSource, setDataSource] = useState(null); // "live" | "cache" | "stale_cache"
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
 
   const [prediction, setPrediction] = useState(null);
   const [loadingPred, setLoadPred]  = useState(false);
@@ -137,17 +169,45 @@ export default function Mandi() {
     try { return JSON.parse(localStorage.getItem("agri_price_alert") || "null"); } catch { return null; }
   });
 
+  // Rotate loading messages every 3 seconds while fetching
+  const loadingInterval = useRef(null);
+  useEffect(() => {
+    if (loadingPrices) {
+      let idx = 0;
+      setLoadingMsg(LOADING_MESSAGES[0]);
+      loadingInterval.current = setInterval(() => {
+        idx = (idx + 1) % LOADING_MESSAGES.length;
+        setLoadingMsg(LOADING_MESSAGES[idx]);
+      }, 3000);
+    } else {
+      clearInterval(loadingInterval.current);
+    }
+    return () => clearInterval(loadingInterval.current);
+  }, [loadingPrices]);
+
   const fetchPrices = async () => {
     setLoadPrices(true);
     setPriceError("");
-    setPrices([]);
+    // DO NOT clear prices here — keep previous data visible during loading
     setPrediction(null);
     setEmptyInfo(null);
+    setDataSource(null);
     try {
       const res = await client.get(
-        `/api/mandi/prices?commodity=${encodeURIComponent(commodity)}&state=${encodeURIComponent(state)}&limit=100`
+        `/api/mandi/prices?commodity=${encodeURIComponent(commodity)}&state=${encodeURIComponent(state)}&limit=100`,
+        { timeout: 60000 } // give backend time for its retries
       );
       const list = res.data.prices || [];
+      const source = res.data.source || "live";
+      setDataSource(source);
+
+      // Backend returns reason: "api_unavailable" with a friendly message
+      if (res.data.reason === "api_unavailable") {
+        setPriceError(res.data.message || "Market data is temporarily unavailable.");
+        // Don't clear existing prices — keep stale data if we had any
+        if (list.length === 0) return;
+      }
+
       setPrices(list);
       setFetchedAt(res.data.fetchedAt);
       if (list.length > 0) {
@@ -161,7 +221,9 @@ export default function Mandi() {
         });
       }
     } catch (err) {
-      setPriceError("Failed to fetch mandi prices: " + (err.response?.data?.message || err.message));
+      // NEVER show raw technical errors — only friendly messages
+      const serverMsg = err.response?.data?.message;
+      setPriceError(serverMsg || "Market data is temporarily unavailable. Please try again shortly.");
     } finally {
       setLoadPrices(false);
     }
@@ -239,13 +301,46 @@ export default function Mandi() {
                 ? <><div style={{ width:16,height:16,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.7s linear infinite" }} /> {t("mandi.fetching")}</>
                 : <><i className="fa-solid fa-chart-line" /> {t("mandi.fetchBtn")}</>}
             </button>
-            {fetchedAt && <span className="refresh-badge"><i className="fa-solid fa-clock" style={{ marginRight: 4 }} />Updated {ago(fetchedAt)}</span>}
+            {fetchedAt && (
+              <span className="refresh-badge">
+                <i className="fa-solid fa-clock" style={{ marginRight: 4 }} />Updated {ago(fetchedAt)}
+                {dataSource === "stale_cache" && <span className="stale-badge" style={{ marginLeft: 6 }}><i className="fa-solid fa-clock-rotate-left" /> Cached</span>}
+                {dataSource === "cache" && <span style={{ marginLeft: 6, fontSize: 11, color: "var(--text-light)" }}>• cached</span>}
+              </span>
+            )}
           </div>
 
-          {priceError && <div className="error-box"><i className="fa-solid fa-circle-exclamation" />{priceError}</div>}
+          {priceError && (
+            <div className="info-banner">
+              <i className="fa-solid fa-cloud-sun" />
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>{priceError}</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>
+                  {prices.length > 0 ? "Showing previously fetched data below." : "Please try again in a moment."}
+                </div>
+              </div>
+            </div>
+          )}
 
           {loadingPrices && (
-            <div className="loading-box"><div className="spinner" /> {t("mandi.fetchingPrices")}</div>
+            <>
+              <div className="loading-enhanced">
+                <div className="spinner" />
+                <div className="loading-msg" key={loadingMsg}>{loadingMsg}</div>
+                <div className="loading-sub">This may take a moment due to government server load</div>
+              </div>
+              {/* Skeleton table placeholder */}
+              <div className="skel-wrap">
+                <div className="skel-header">
+                  {[80,60,70,50,50,55,60].map((w,i) => <div key={i} className="skel-cell" style={{ width: `${w}px` }} />)}
+                </div>
+                {[...Array(5)].map((_,i) => (
+                  <div className="skel-row" key={i} style={{ opacity: 1 - i * 0.12 }}>
+                    {[100,70,80,55,55,60,65].map((w,j) => <div key={j} className="skel-cell" style={{ width: `${w}px`, animationDelay: `${(i*7+j)*0.08}s` }} />)}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {prices.length > 0 && !loadingPrices && (

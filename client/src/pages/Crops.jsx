@@ -14,57 +14,126 @@ const C = {
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+/* ═══════════════════════════════════════════════════════════════
+   CROP ICON RESOLUTION SYSTEM
+   ─────────────────────────────────────────────────────────────
+   The backend Crop model does NOT store icon/iconColor fields.
+   When crops arrive from the API, they have no icon data.
+   This system resolves icons by normalized crop name so every
+   crop ALWAYS renders a valid, consistent icon.
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Master icon registry — keyed by lowercase trimmed crop name */
+const CROP_ICON_MAP = {
+  wheat:        { icon: "fa-wheat-awn",           iconColor: "#C8973A", bgHue: "#FDF3E0" },
+  soybean:      { icon: "fa-circle-dot",          iconColor: "#2E6B49", bgHue: "#E8F5E4" },
+  cotton:       { icon: "fa-cloud",               iconColor: "#7A9080", bgHue: "#EAF0F0" },
+  rice:         { icon: "fa-bowl-rice",            iconColor: "#C8973A", bgHue: "#FEF9E7" },
+  tomato:       { icon: "fa-circle",              iconColor: "#E74C3C", bgHue: "#FDEDEC" },
+  mustard:      { icon: "fa-sun",                 iconColor: "#F1C40F", bgHue: "#FEFDE7" },
+  sugarcane:    { icon: "fa-bars-staggered",       iconColor: "#2E6B49", bgHue: "#E8F5E4" },
+  maize:        { icon: "fa-seedling",            iconColor: "#F39C12", bgHue: "#FEF9E7" },
+  corn:         { icon: "fa-seedling",            iconColor: "#F39C12", bgHue: "#FEF9E7" },
+  chickpea:     { icon: "fa-circle-half-stroke",  iconColor: "#8B6914", bgHue: "#F5EDD6" },
+  chana:        { icon: "fa-circle-half-stroke",  iconColor: "#8B6914", bgHue: "#F5EDD6" },
+  banana:       { icon: "fa-leaf",                iconColor: "#F1C40F", bgHue: "#FEFDE7" },
+  mango:        { icon: "fa-apple-whole",         iconColor: "#F39C12", bgHue: "#FEF9E7" },
+  onion:        { icon: "fa-circle-dot",          iconColor: "#C0392B", bgHue: "#FDEDEC" },
+  groundnut:    { icon: "fa-ellipsis",            iconColor: "#A0522D", bgHue: "#F5EDD6" },
+  peanut:       { icon: "fa-ellipsis",            iconColor: "#A0522D", bgHue: "#F5EDD6" },
+  turmeric:     { icon: "fa-mortar-pestle",       iconColor: "#DAA520", bgHue: "#FEFDE7" },
+  potato:       { icon: "fa-cubes-stacked",       iconColor: "#8B7355", bgHue: "#F5EDD6" },
+  lentil:       { icon: "fa-circle-half-stroke",  iconColor: "#D35400", bgHue: "#FDEDEC" },
+  masoor:       { icon: "fa-circle-half-stroke",  iconColor: "#D35400", bgHue: "#FDEDEC" },
+  sunflower:    { icon: "fa-sun",                 iconColor: "#F4D03F", bgHue: "#FEFDE7" },
+  "bitter gourd":{ icon: "fa-leaf",               iconColor: "#27AE60", bgHue: "#E8F5E4" },
+  garlic:       { icon: "fa-burst",               iconColor: "#BDC3C7", bgHue: "#F0EFED" },
+  "pigeon pea": { icon: "fa-circle-dot",          iconColor: "#27AE60", bgHue: "#E8F5E4" },
+  arhar:        { icon: "fa-circle-dot",          iconColor: "#27AE60", bgHue: "#E8F5E4" },
+  tur:          { icon: "fa-circle-dot",          iconColor: "#27AE60", bgHue: "#E8F5E4" },
+  jowar:        { icon: "fa-wheat-awn",           iconColor: "#C8973A", bgHue: "#FDF3E0" },
+  sorghum:      { icon: "fa-wheat-awn",           iconColor: "#C8973A", bgHue: "#FDF3E0" },
+  bajra:        { icon: "fa-wheat-awn",           iconColor: "#8B6914", bgHue: "#F5EDD6" },
+  millet:       { icon: "fa-wheat-awn",           iconColor: "#8B6914", bgHue: "#F5EDD6" },
+  tea:          { icon: "fa-mug-hot",             iconColor: "#2E6B49", bgHue: "#E8F5E4" },
+  coffee:       { icon: "fa-mug-saucer",          iconColor: "#6F4E37", bgHue: "#F5EDD6" },
+  coconut:      { icon: "fa-tree",                iconColor: "#2E6B49", bgHue: "#E8F5E4" },
+  papaya:       { icon: "fa-apple-whole",         iconColor: "#E67E22", bgHue: "#FEF9E7" },
+  guava:        { icon: "fa-apple-whole",         iconColor: "#27AE60", bgHue: "#E8F5E4" },
+  chilli:       { icon: "fa-pepper-hot",          iconColor: "#E74C3C", bgHue: "#FDEDEC" },
+  pepper:       { icon: "fa-pepper-hot",          iconColor: "#E74C3C", bgHue: "#FDEDEC" },
+  ginger:       { icon: "fa-root",                iconColor: "#DAA520", bgHue: "#FEFDE7" },
+  jute:         { icon: "fa-bars-staggered",       iconColor: "#8B6914", bgHue: "#F5EDD6" },
+  rubber:       { icon: "fa-tree",                iconColor: "#2C3E50", bgHue: "#EAF0F0" },
+};
+
+/** Default fallback for crops not in the registry */
+const FALLBACK_ICON = { icon: "fa-seedling", iconColor: "#2E6B49", bgHue: "#E8F5E4" };
+
+/**
+ * Resolves icon data for any crop name.
+ * Handles case insensitivity, leading/trailing whitespace, and
+ * returns a guaranteed non-null { icon, iconColor, bgHue } object.
+ */
+function resolveCropIcon(cropName) {
+  if (!cropName) return FALLBACK_ICON;
+  const key = String(cropName).trim().toLowerCase();
+  return CROP_ICON_MAP[key] || FALLBACK_ICON;
+}
+
+/**
+ * Enriches a crop object with resolved icon data.
+ * Safe to call on both seed crops AND API crops.
+ */
+function enrichCropWithIcon(crop) {
+  const resolved = resolveCropIcon(crop?.name);
+  return {
+    ...crop,
+    icon:      resolved.icon,
+    iconColor: resolved.iconColor,
+    bgHue:     resolved.bgHue,
+  };
+}
+
 /* ── Static seed crops (shown while API loads or if empty) ── */
 const SEED_CROPS = [
   { _id:"1", name:"Wheat",     season:"Rabi",   category:"Cereal",    duration:"120-150 days", regions:["Punjab","Haryana","UP","MP"],
     conditions:{ soil:"Loamy",temperature:"10-25°C",rainfall:"250-500mm",humidity:"60-70%" },
-    description:"Wheat is India's most important rabi crop, grown across northern plains. Rich in carbohydrates and protein.",
-    icon:"fa-wheat-awn", iconColor:"#C8973A" },
+    description:"Wheat is India's most important rabi crop, grown across northern plains. Rich in carbohydrates and protein." },
   { _id:"2", name:"Soybean",   season:"Kharif", category:"Oilseed",   duration:"90-120 days",  regions:["Maharashtra","MP","Rajasthan"],
     conditions:{ soil:"Well-drained loam",temperature:"25-30°C",rainfall:"600-800mm",humidity:"65-75%" },
-    description:"Soybean is a major oilseed and protein crop. Highly profitable in Kharif season across central India.",
-    icon:"fa-circle-dot", iconColor:"#2E6B49" },
+    description:"Soybean is a major oilseed and protein crop. Highly profitable in Kharif season across central India." },
   { _id:"3", name:"Cotton",    season:"Kharif", category:"Cash Crop",  duration:"150-180 days", regions:["Gujarat","Maharashtra","Telangana"],
     conditions:{ soil:"Black cotton soil",temperature:"21-35°C",rainfall:"500-700mm",humidity:"55-65%" },
-    description:"Cotton is India's white gold. A major cash crop that supports millions of farmers across the Deccan.",
-    icon:"fa-cloud", iconColor:"#7A9080" },
+    description:"Cotton is India's white gold. A major cash crop that supports millions of farmers across the Deccan." },
   { _id:"4", name:"Rice",      season:"Kharif", category:"Cereal",    duration:"100-130 days", regions:["WB","Odisha","Tamil Nadu","AP"],
     conditions:{ soil:"Clayey, water retentive",temperature:"20-35°C",rainfall:"1000-2000mm",humidity:"70-80%" },
-    description:"Rice is the staple food of over half of India's population, grown in flooded paddy fields.",
-    icon:"fa-bowl-rice", iconColor:"#C8973A" },
+    description:"Rice is the staple food of over half of India's population, grown in flooded paddy fields." },
   { _id:"5", name:"Tomato",    season:"All Season", category:"Vegetable", duration:"60-90 days", regions:["Maharashtra","Karnataka","AP","HP"],
     conditions:{ soil:"Sandy loam",temperature:"18-27°C",rainfall:"400-600mm",humidity:"60-70%" },
-    description:"Tomato is a high-value vegetable crop cultivated year-round. Widely grown across India in varied climates.",
-    icon:"fa-circle", iconColor:"#E74C3C" },
+    description:"Tomato is a high-value vegetable crop cultivated year-round. Widely grown across India in varied climates." },
   { _id:"6", name:"Mustard",   season:"Rabi",   category:"Oilseed",   duration:"90-110 days",  regions:["Rajasthan","UP","Haryana","MP"],
     conditions:{ soil:"Sandy loam to loam",temperature:"10-25°C",rainfall:"250-400mm",humidity:"55-65%" },
-    description:"Mustard is India's second most important oilseed crop, thriving in the cool dry winters of northern India.",
-    icon:"fa-sun", iconColor:"#F1C40F" },
+    description:"Mustard is India's second most important oilseed crop, thriving in the cool dry winters of northern India." },
   { _id:"7", name:"Sugarcane", season:"All Season", category:"Cash Crop", duration:"300-365 days", regions:["UP","Maharashtra","Karnataka","TN"],
     conditions:{ soil:"Deep loamy",temperature:"20-35°C",rainfall:"1000-1500mm",humidity:"65-80%" },
-    description:"Sugarcane is India's most important commercial crop, forming the backbone of the sugar industry.",
-    icon:"fa-bars", iconColor:"#2E6B49" },
+    description:"Sugarcane is India's most important commercial crop, forming the backbone of the sugar industry." },
   { _id:"8", name:"Maize",     season:"Kharif", category:"Cereal",    duration:"80-110 days",  regions:["Karnataka","MP","Bihar","Rajasthan"],
     conditions:{ soil:"Well-drained loam",temperature:"20-30°C",rainfall:"500-900mm",humidity:"60-70%" },
-    description:"Maize is a versatile crop used as food, fodder, and industrial raw material across India.",
-    icon:"fa-corn", iconColor:"#F39C12" },
+    description:"Maize is a versatile crop used as food, fodder, and industrial raw material across India." },
   { _id:"9", name:"Chickpea",  season:"Rabi",   category:"Pulse",     duration:"90-120 days",  regions:["MP","Rajasthan","Maharashtra","UP"],
     conditions:{ soil:"Sandy loam to medium black",temperature:"15-25°C",rainfall:"250-400mm",humidity:"50-60%" },
-    description:"Chickpea (Chana) is India's most important pulse crop, grown extensively in central and northern India.",
-    icon:"fa-circle-half-stroke", iconColor:"#8B6914" },
+    description:"Chickpea (Chana) is India's most important pulse crop, grown extensively in central and northern India." },
   { _id:"10", name:"Banana",   season:"All Season", category:"Fruit",  duration:"300-400 days", regions:["Tamil Nadu","Maharashtra","Gujarat","AP"],
     conditions:{ soil:"Rich loamy",temperature:"20-35°C",rainfall:"1200-2200mm",humidity:"70-85%" },
-    description:"Banana is India's largest produced fruit, grown in tropical and subtropical regions with high humidity.",
-    icon:"fa-banana", iconColor:"#F1C40F" },
+    description:"Banana is India's largest produced fruit, grown in tropical and subtropical regions with high humidity." },
   { _id:"11", name:"Mango",    season:"Zaid",   category:"Fruit",     duration:"365+ days",    regions:["UP","Maharashtra","AP","Gujarat"],
     conditions:{ soil:"Deep alluvial or sandy loam",temperature:"24-27°C",rainfall:"750-1200mm",humidity:"55-70%" },
-    description:"India is the world's largest mango producer. Known as the king of fruits, it has over 1000 varieties.",
-    icon:"fa-apple-whole", iconColor:"#F39C12" },
+    description:"India is the world's largest mango producer. Known as the king of fruits, it has over 1000 varieties." },
   { _id:"12", name:"Onion",    season:"Rabi",   category:"Vegetable", duration:"100-120 days", regions:["Maharashtra","Karnataka","MP","Gujarat"],
     conditions:{ soil:"Sandy loam to clay loam",temperature:"13-24°C",rainfall:"350-500mm",humidity:"55-65%" },
-    description:"Onion is a critically important vegetable crop in India, both for domestic consumption and export.",
-    icon:"fa-circle-dot", iconColor:"#C0392B" },
-];
+    description:"Onion is a critically important vegetable crop in India, both for domestic consumption and export." },
+].map(enrichCropWithIcon);
 
 const SEASONS    = ["All", "Kharif", "Rabi", "Zaid", "All Season"];
 const CATEGORIES = ["All", "Cereal", "Pulse", "Oilseed", "Vegetable", "Fruit", "Cash Crop"];
@@ -266,34 +335,43 @@ const categoryStyle = (c) => ({
   "Cash Crop":{ bg:"rgba(122,144,128,0.12)", color:"#3A5040" },
 }[c] || { bg:C.surface, color:C.textMuted });
 
+/* ── Helper: translate crop fields with fallback ── */
+function tc(t, key, fallback) {
+  const v = t(key, { defaultValue: "" });
+  return v || fallback || "";
+}
+
 /* ── Crop Card ── */
 function CropCard({ crop, onClick }) {
   const { t } = useTranslation();
+  const cropName = tc(t, `crops.data.cropNames.${crop.name}`, crop.name);
+  const cropSeason = tc(t, `crops.data.seasons.${crop.season}`, crop.season);
+  const cropCategory = tc(t, `crops.data.categories.${crop.category}`, crop.category);
+  const cropDesc = tc(t, `crops.data.cropDescriptions.${crop.name}`, crop.description);
+  const cropDuration = tc(t, `crops.data.durations.${crop.duration}`, crop.duration);
   const ss = seasonStyle(crop.season);
   const cs = categoryStyle(crop.category);
-  const bgHue = { "fa-wheat-awn":"#FDF3E0","fa-circle-dot":"#E8F5E4",
-    "fa-cloud":"#EAF0F0","fa-bowl-rice":"#FEF9E7","fa-circle":"#FDEDEC",
-    "fa-sun":"#FEFDE7","fa-bars":"#E8F5E4","fa-corn":"#FEF9E7",
-    "fa-circle-half-stroke":"#F5EDD6","fa-banana":"#FEFDE7",
-    "fa-apple-whole":"#FEF9E7","fa-brain":"#EAF0F0" };
-  const topBg = bgHue[crop.icon] || C.surface;
+  const resolved = resolveCropIcon(crop.name);
+  const iconClass = crop.icon || resolved.icon;
+  const iconColor = crop.iconColor || resolved.iconColor;
+  const topBg     = crop.bgHue || resolved.bgHue;
 
   return (
     <div className="crop-card" onClick={() => onClick(crop)}>
       <div className="crop-card-top" style={{ background:topBg }}>
-        <i className={`fa-solid ${crop.icon} crop-card-icon`} style={{ color:crop.iconColor }} />
+        <i className={`fa-solid ${iconClass} crop-card-icon`} style={{ color:iconColor }} />
       </div>
       <div className="crop-card-body">
-        <div className="crop-name">{crop.name}</div>
+        <div className="crop-name">{cropName}</div>
         <div className="crop-tags">
-          <span className="crop-tag" style={{ background:ss.bg, color:ss.color }}>{crop.season}</span>
-          <span className="crop-tag" style={{ background:cs.bg, color:cs.color }}>{crop.category}</span>
+          <span className="crop-tag" style={{ background:ss.bg, color:ss.color }}>{cropSeason}</span>
+          <span className="crop-tag" style={{ background:cs.bg, color:cs.color }}>{cropCategory}</span>
         </div>
-        <div className="crop-desc">{crop.description}</div>
+        <div className="crop-desc">{cropDesc}</div>
         <div className="crop-footer">
           <span className="crop-duration">
             <i className="fa-regular fa-clock" style={{ fontSize:10 }} />
-            {crop.duration}
+            {cropDuration}
           </span>
           <span className="crop-cta">
             {t("crops.viewDetails")} <i className="fa-solid fa-arrow-right" style={{ fontSize:10 }} />
@@ -315,13 +393,19 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
     || (() => { try { return JSON.parse(localStorage.getItem("user")||"{}").location; } catch { return ""; } })()
     || "India";
 
+  const cropName = tc(t, `crops.data.cropNames.${crop.name}`, crop.name);
+  const cropSeason = tc(t, `crops.data.seasons.${crop.season}`, crop.season);
+  const cropCategory = tc(t, `crops.data.categories.${crop.category}`, crop.category);
+  const cropDesc = tc(t, `crops.data.cropDescriptions.${crop.name}`, crop.description);
+  const cropDuration = tc(t, `crops.data.durations.${crop.duration}`, crop.duration);
+  const cropSoil = tc(t, `crops.data.soilTypes.${crop.conditions?.soil}`, crop.conditions?.soil);
+
   const ss = seasonStyle(crop.season);
   const cs = categoryStyle(crop.category);
-  const bgHue = { "fa-wheat-awn":"#FDF3E0","fa-circle-dot":"#E8F5E4","fa-cloud":"#EAF0F0",
-    "fa-bowl-rice":"#FEF9E7","fa-circle":"#FDEDEC","fa-sun":"#FEFDE7","fa-bars":"#E8F5E4",
-    "fa-corn":"#FEF9E7","fa-circle-half-stroke":"#F5EDD6","fa-banana":"#FEFDE7",
-    "fa-apple-whole":"#FEF9E7","fa-brain":"#EAF0F0" };
-  const topBg = bgHue[crop.icon] || C.surface;
+  const resolved = resolveCropIcon(crop.name);
+  const iconClass = crop.icon || resolved.icon;
+  const iconColor = crop.iconColor || resolved.iconColor;
+  const topBg     = crop.bgHue || resolved.bgHue;
 
   // Close on Escape
   useEffect(() => {
@@ -332,15 +416,15 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
 
   const generatePlan = async () => {
     setGenerating(true);
-    setProgMsg("Asking Gemini AI to build your plan...");
+    setProgMsg(t("crops.planProgress.askingAI"));
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error("Please log in to generate a farming plan.");
+        throw new Error(t("crops.planProgress.loginRequired"));
       }
 
       // Step 1 — generate AI plan
-      setProgMsg("Generating step-by-step farming timeline...");
+      setProgMsg(t("crops.planProgress.generatingTimeline"));
       const { data: planData } = await axios.post(
         `${API}/api/chat/generate-plan`,
         { cropName: crop.name, location: userLocation, season: crop.season },
@@ -348,7 +432,7 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
       );
 
       // Step 2 — save plan
-      setProgMsg("Saving your plan...");
+      setProgMsg(t("crops.planProgress.savingPlan"));
       const planPayload = {
         cropName: planData.plan.cropName || crop.name,
         crop: crop._id?.length === 24 ? crop._id : undefined,
@@ -364,7 +448,7 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setProgMsg("Done! Redirecting to your plan...");
+      setProgMsg(t("crops.planProgress.done"));
       setTimeout(() => {
         onClose();
         navigate(`/plans/${saved.plan._id}`);
@@ -372,13 +456,13 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
     } catch (err) {
       setProgMsg("");
       setGenerating(false);
-      alert(err.response?.data?.message || err.message || "Failed to generate plan. Please try again.");
+      alert(err.response?.data?.message || err.message || t("crops.planProgress.failed"));
     }
   };
 
   const askAboutCrop = () => {
     onClose();
-    navigate("/chat", { state:{ prefill:`Tell me more about growing ${crop.name} in ${userLocation}` } });
+    navigate("/chat", { state:{ prefill: t("crops.askAboutCropPrompt", { crop: cropName, location: userLocation }) } });
   };
 
   return (
@@ -386,19 +470,19 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
       <div className="modal">
         {/* Hero */}
         <div className="modal-hero" style={{ background:topBg }}>
-          <i className={`fa-solid ${crop.icon} modal-hero-icon`} style={{ color:crop.iconColor }} />
+          <i className={`fa-solid ${iconClass} modal-hero-icon`} style={{ color:iconColor }} />
           <button className="modal-close" onClick={onClose}>
             <i className="fa-solid fa-xmark" />
           </button>
         </div>
 
         <div className="modal-body">
-          <div className="modal-name">{crop.name}</div>
+          <div className="modal-name">{cropName}</div>
           <div style={{ display:"flex", gap:6, marginBottom:14 }}>
-            <span className="crop-tag" style={{ background:ss.bg, color:ss.color }}>{crop.season}</span>
-            <span className="crop-tag" style={{ background:cs.bg, color:cs.color }}>{crop.category}</span>
+            <span className="crop-tag" style={{ background:ss.bg, color:ss.color }}>{cropSeason}</span>
+            <span className="crop-tag" style={{ background:cs.bg, color:cs.color }}>{cropCategory}</span>
           </div>
-          <div className="modal-desc">{crop.description}</div>
+          <div className="modal-desc">{cropDesc}</div>
 
           {/* Conditions grid */}
           <div style={{ fontFamily:"'DM Serif Display',serif",fontSize:16,color:C.primary,marginBottom:12 }}>
@@ -406,12 +490,12 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
           </div>
           <div className="detail-grid">
             {[
-              { icon:"fa-earth-asia",      label:t("crops.conditions.soilType"),    val:crop.conditions?.soil        || "—" },
+              { icon:"fa-earth-asia",      label:t("crops.conditions.soilType"),    val:cropSoil        || "—" },
               { icon:"fa-thermometer-half",label:t("crops.conditions.temperature"), val:crop.conditions?.temperature || "—" },
               { icon:"fa-cloud-rain",      label:t("crops.conditions.rainfall"),    val:crop.conditions?.rainfall    || "—" },
               { icon:"fa-droplet",         label:t("crops.conditions.humidity"),    val:crop.conditions?.humidity    || "—" },
-              { icon:"fa-clock",           label:t("crops.conditions.duration"),    val:crop.duration                || "—" },
-              { icon:"fa-calendar",        label:t("crops.conditions.season"),      val:crop.season                  || "—" },
+              { icon:"fa-clock",           label:t("crops.conditions.duration"),    val:cropDuration                || "—" },
+              { icon:"fa-calendar",        label:t("crops.conditions.season"),      val:cropSeason                  || "—" },
             ].map(({ icon,label,val }) => (
               <div key={label} className="detail-item">
                 <div className="detail-label">
@@ -433,7 +517,7 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
                 {crop.regions.map(r => (
                   <span key={r} className="region-chip">
                     <i className="fa-solid fa-location-dot" style={{ fontSize:10,marginRight:4 }} />
-                    {r}
+                    {tc(t, `crops.data.regions.${r}`, r)}
                   </span>
                 ))}
               </div>
@@ -490,7 +574,7 @@ export default function Crops() {
         const { data } = await axios.get(`${API}/api/crops`, {
           headers:{ Authorization:`Bearer ${token}` },
         });
-        if (data.crops?.length > 0) setCrops(data.crops);
+        if (data.crops?.length > 0) setCrops(data.crops.map(enrichCropWithIcon));
       } catch {
         /* keep seed crops if API fails */
       } finally {
@@ -576,7 +660,7 @@ export default function Crops() {
             <div style={{ display:"flex",alignItems:"center",gap:10,marginLeft:"auto",flexShrink:0 }}>
               <span className="results-count">
                 <i className="fa-solid fa-layer-group" style={{ marginRight:5,fontSize:11 }} />
-                {filtered.length} crop{filtered.length!==1?"s":""}
+                {filtered.length === 1 ? t("crops.resultsCount", { count: filtered.length }) : t("crops.resultsCountPlural", { count: filtered.length })}
               </span>
               {hasFilters && (
                 <button onClick={clearFilters}

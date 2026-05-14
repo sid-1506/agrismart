@@ -2,6 +2,7 @@ import axios from "axios";
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  timeout: 30000, // 30s default — mandi routes override with longer timeout
 });
 
 // Attach JWT on every request

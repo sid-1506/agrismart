@@ -307,6 +307,105 @@
       "vegetable": "Vegetable",
       "fruit": "Fruit",
       "cashCrop": "Cash Crop"
+    },
+    "resultsCount": "{{count}} crop",
+    "resultsCountPlural": "{{count}} crops",
+    "planProgress": {
+      "askingAI": "Asking Gemini AI to build your plan...",
+      "generatingTimeline": "Generating step-by-step farming timeline...",
+      "savingPlan": "Saving your plan...",
+      "done": "Done! Redirecting to your plan...",
+      "loginRequired": "Please log in to generate a farming plan.",
+      "failed": "Failed to generate plan. Please try again."
+    },
+    "askAboutCropPrompt": "Tell me more about growing {{crop}} in {{location}}",
+    "data": {
+      "cropNames": {
+        "Wheat": "Wheat",
+        "Soybean": "Soybean",
+        "Cotton": "Cotton",
+        "Rice": "Rice",
+        "Tomato": "Tomato",
+        "Mustard": "Mustard",
+        "Sugarcane": "Sugarcane",
+        "Maize": "Maize",
+        "Chickpea": "Chickpea",
+        "Banana": "Banana",
+        "Mango": "Mango",
+        "Onion": "Onion"
+      },
+      "cropDescriptions": {
+        "Wheat": "Wheat is India's most important rabi crop, grown across northern plains. Rich in carbohydrates and protein.",
+        "Soybean": "Soybean is a major oilseed and protein crop. Highly profitable in Kharif season across central India.",
+        "Cotton": "Cotton is India's white gold. A major cash crop that supports millions of farmers across the Deccan.",
+        "Rice": "Rice is the staple food of over half of India's population, grown in flooded paddy fields.",
+        "Tomato": "Tomato is a high-value vegetable crop cultivated year-round. Widely grown across India in varied climates.",
+        "Mustard": "Mustard is India's second most important oilseed crop, thriving in the cool dry winters of northern India.",
+        "Sugarcane": "Sugarcane is India's most important commercial crop, forming the backbone of the sugar industry.",
+        "Maize": "Maize is a versatile crop used as food, fodder, and industrial raw material across India.",
+        "Chickpea": "Chickpea (Chana) is India's most important pulse crop, grown extensively in central and northern India.",
+        "Banana": "Banana is India's largest produced fruit, grown in tropical and subtropical regions with high humidity.",
+        "Mango": "India is the world's largest mango producer. Known as the king of fruits, it has over 1000 varieties.",
+        "Onion": "Onion is a critically important vegetable crop in India, both for domestic consumption and export."
+      },
+      "seasons": {
+        "Kharif": "Kharif",
+        "Rabi": "Rabi",
+        "Zaid": "Zaid",
+        "All Season": "All Season"
+      },
+      "categories": {
+        "Cereal": "Cereal",
+        "Pulse": "Pulse",
+        "Oilseed": "Oilseed",
+        "Vegetable": "Vegetable",
+        "Fruit": "Fruit",
+        "Cash Crop": "Cash Crop"
+      },
+      "regions": {
+        "Punjab": "Punjab",
+        "Haryana": "Haryana",
+        "UP": "UP",
+        "MP": "MP",
+        "Maharashtra": "Maharashtra",
+        "Rajasthan": "Rajasthan",
+        "Gujarat": "Gujarat",
+        "Telangana": "Telangana",
+        "WB": "West Bengal",
+        "Odisha": "Odisha",
+        "Tamil Nadu": "Tamil Nadu",
+        "AP": "Andhra Pradesh",
+        "Karnataka": "Karnataka",
+        "HP": "Himachal Pradesh",
+        "TN": "Tamil Nadu",
+        "Bihar": "Bihar"
+      },
+      "soilTypes": {
+        "Loamy": "Loamy",
+        "Well-drained loam": "Well-drained loam",
+        "Black cotton soil": "Black cotton soil",
+        "Clayey, water retentive": "Clayey, water retentive",
+        "Sandy loam": "Sandy loam",
+        "Sandy loam to loam": "Sandy loam to loam",
+        "Deep loamy": "Deep loamy",
+        "Sandy loam to medium black": "Sandy loam to medium black",
+        "Rich loamy": "Rich loamy",
+        "Deep alluvial or sandy loam": "Deep alluvial or sandy loam",
+        "Sandy loam to clay loam": "Sandy loam to clay loam"
+      },
+      "durations": {
+        "120-150 days": "120-150 days",
+        "90-120 days": "90-120 days",
+        "150-180 days": "150-180 days",
+        "100-130 days": "100-130 days",
+        "60-90 days": "60-90 days",
+        "90-110 days": "90-110 days",
+        "300-365 days": "300-365 days",
+        "80-110 days": "80-110 days",
+        "300-400 days": "300-400 days",
+        "365+ days": "365+ days",
+        "100-120 days": "100-120 days"
+      }
     }
   },
   "yield": {
