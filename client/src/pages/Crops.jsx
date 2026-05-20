@@ -5,6 +5,24 @@ import axios from "axios";
 import { AppLayout, layoutStyles } from "../components/Layout";
 import { useActiveLocation } from "../stores/useLocationStore";
 
+import wheatImg     from "../assets/crops/wheat.png";
+import soybeanImg   from "../assets/crops/soybean.png";
+import cottonImg    from "../assets/crops/cotton.png";
+import riceImg      from "../assets/crops/rice.png";
+import tomatoImg    from "../assets/crops/tomato.png";
+import mustardImg   from "../assets/crops/mustard.png";
+import sugarcaneImg from "../assets/crops/sugarcane.png";
+import maizeImg     from "../assets/crops/maize.png";
+import chickpeaImg  from "../assets/crops/chickpea.png";
+import bananaImg    from "../assets/crops/banana.png";
+import mangoImg     from "../assets/crops/mango.png";
+import onionImg     from "../assets/crops/onion.png";
+import groundnutImg from "../assets/crops/groundnut.png";
+import potatoImg    from "../assets/crops/potato.png";
+import turmericImg  from "../assets/crops/turmeric.png";
+import sunflowerImg from "../assets/crops/sunflower.png";
+import fallbackImg  from "../assets/crops/fallback.png";
+
 const C = {
   primary: "#1A4731", primaryDark: "#0D2A1F", secondary: "#2E6B49",
   accent: "#C8973A", accentLight: "#E8D5B4", bg: "#F7F3ED",
@@ -69,6 +87,35 @@ const CROP_ICON_MAP = {
 
 /** Default fallback for crops not in the registry */
 const FALLBACK_ICON = { icon: "fa-seedling", iconColor: "#2E6B49", bgHue: "#E8F5E4" };
+
+/** PNG image map — keyed by lowercase trimmed crop name */
+const CROP_IMAGE_MAP = {
+  wheat:      wheatImg,
+  soybean:    soybeanImg,
+  cotton:     cottonImg,
+  rice:       riceImg,
+  tomato:     tomatoImg,
+  mustard:    mustardImg,
+  sugarcane:  sugarcaneImg,
+  maize:      maizeImg,
+  corn:       maizeImg,
+  chickpea:   chickpeaImg,
+  chana:      chickpeaImg,
+  banana:     bananaImg,
+  mango:      mangoImg,
+  onion:      onionImg,
+  groundnut:  groundnutImg,
+  peanut:     groundnutImg,
+  potato:     potatoImg,
+  turmeric:   turmericImg,
+  sunflower:  sunflowerImg,
+};
+
+function resolveCropImage(cropName) {
+  if (!cropName) return fallbackImg;
+  const key = String(cropName).trim().toLowerCase();
+  return CROP_IMAGE_MAP[key] || fallbackImg;
+}
 
 /**
  * Resolves icon data for any crop name.
@@ -200,7 +247,15 @@ const styles = `
     height:96px; display:flex; align-items:center; justify-content:center;
     position:relative; overflow:hidden;
   }
-  .crop-card-icon { font-size:38px; position:relative; z-index:1; }
+  .crop-card-icon {
+    width:78px; height:78px; object-fit:contain;
+    position:relative; z-index:1; display:block;
+    transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.10));
+  }
+  .crop-card:hover .crop-card-icon {
+    transform:scale(1.1) translateY(-4px);
+  }
   .crop-card-body { padding:16px 18px; }
 
   .crop-name    { font-family:'DM Serif Display',serif; font-size:18px; color:${C.primary}; margin-bottom:5px; }
@@ -234,7 +289,11 @@ const styles = `
     height:140px; display:flex; align-items:center; justify-content:center;
     position:relative; overflow:hidden; border-radius:20px 20px 0 0;
   }
-  .modal-hero-icon { font-size:56px; position:relative; z-index:1; }
+  .modal-hero-icon {
+    width:110px; height:110px; object-fit:contain;
+    position:relative; z-index:1; display:block;
+    filter:drop-shadow(0 6px 14px rgba(0,0,0,0.12));
+  }
   .modal-close {
     position:absolute; top:14px; right:14px; z-index:2;
     width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,0.18);
@@ -352,14 +411,17 @@ function CropCard({ crop, onClick }) {
   const ss = seasonStyle(crop.season);
   const cs = categoryStyle(crop.category);
   const resolved = resolveCropIcon(crop.name);
-  const iconClass = crop.icon || resolved.icon;
-  const iconColor = crop.iconColor || resolved.iconColor;
-  const topBg     = crop.bgHue || resolved.bgHue;
+  const topBg    = crop.bgHue || resolved.bgHue;
 
   return (
     <div className="crop-card" onClick={() => onClick(crop)}>
       <div className="crop-card-top" style={{ background:topBg }}>
-        <i className={`fa-solid ${iconClass} crop-card-icon`} style={{ color:iconColor }} />
+        <img
+          src={resolveCropImage(crop.name)}
+          alt={cropName}
+          className="crop-card-icon"
+          onError={e => { e.currentTarget.src = fallbackImg; }}
+        />
       </div>
       <div className="crop-card-body">
         <div className="crop-name">{cropName}</div>
@@ -403,9 +465,7 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
   const ss = seasonStyle(crop.season);
   const cs = categoryStyle(crop.category);
   const resolved = resolveCropIcon(crop.name);
-  const iconClass = crop.icon || resolved.icon;
-  const iconColor = crop.iconColor || resolved.iconColor;
-  const topBg     = crop.bgHue || resolved.bgHue;
+  const topBg    = crop.bgHue || resolved.bgHue;
 
   // Close on Escape
   useEffect(() => {
@@ -470,7 +530,12 @@ function CropModal({ crop, onClose, onPlanGenerated }) {
       <div className="modal">
         {/* Hero */}
         <div className="modal-hero" style={{ background:topBg }}>
-          <i className={`fa-solid ${iconClass} modal-hero-icon`} style={{ color:iconColor }} />
+          <img
+            src={resolveCropImage(crop.name)}
+            alt={cropName}
+            className="modal-hero-icon"
+            onError={e => { e.currentTarget.src = fallbackImg; }}
+          />
           <button className="modal-close" onClick={onClose}>
             <i className="fa-solid fa-xmark" />
           </button>
