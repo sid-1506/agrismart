@@ -14,7 +14,7 @@ const C = {
   success: "#1A6B3C",
 };
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL ?? "";
 
 const LANGUAGES = [
   "English","Hindi","Marathi","Tamil","Telugu","Kannada","Bengali","Gujarati",

@@ -9,7 +9,7 @@ import { useActiveLocation } from "../stores/useLocationStore";
 import SpeechRecognizer from "../utils/SpeechRecognizer";
 import { getLanguageCode, detectLanguage } from "../utils/languageUtils";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL ?? "";
 
 const styles = `
   ${layoutStyles}

@@ -203,7 +203,7 @@ export default function Signup() {
     setLoading(true);
     try {
       const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/signup`,
+        `${import.meta.env.VITE_API_URL ?? ""}/api/auth/signup`,
         { name:form.name, email:form.email, password:form.password,
           location:form.location, language:form.language }
       );
@@ -218,7 +218,7 @@ export default function Signup() {
   };
 
   const handleGoogle = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/google`;
+    window.location.href = `${import.meta.env.VITE_API_URL ?? ""}/api/auth/google`;
   };
 
   return (

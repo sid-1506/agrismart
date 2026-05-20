@@ -4,7 +4,7 @@ import i18n from "../i18n/index.js";
 import { getI18nLang } from "../i18n/index.js";
 import useSettingsStore from "./useSettingsStore.js";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL ?? "";
 
 const useAuthStore = create((set, get) => ({
   user:    null,

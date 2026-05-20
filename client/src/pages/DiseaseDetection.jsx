@@ -4,7 +4,7 @@ import axios from "axios";
 import { AppLayout, layoutStyles } from "../components/Layout";
 import useSettingsStore from "../stores/useSettingsStore";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL ?? "";
 
 // Resize + compress image to stay under ~1MB base64 payload
 function compressImage(file) {
